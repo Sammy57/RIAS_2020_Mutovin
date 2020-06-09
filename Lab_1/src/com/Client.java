@@ -3,56 +3,52 @@ import java.io.*;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-/**создание клиента со всеми необходимыми утилитами, вход в программу Client*/
-
-class ClientSomthing {
+class Client { //главный класс Клиента
     
     private Socket socket;
     private BufferedReader in; // чтения из потока
     private BufferedWriter out; // записывает текст в поток вывода символов
     private BufferedReader inputUser; // поток чтения с консоли
-    private String addr; // ip адрес клиента
+    private String adres; // ip адрес клиента
     private int port; // порт соединения
-    private String nickname; // имя клиента
+    private String name; // имя клиента
     private Date time; //время
-    private String dtime;
+    private String datatime;
     private SimpleDateFormat dt1;
     
-    /* для создания необходимо принять адрес и номер порта @param addr @param port */
+    /* для создания необходимо принять адрес и номер порта */
     
-    public ClientSomthing(String addr, int port) {
-        this.addr = addr;
+    public Client(String adres, int port) {
+        this.adres = adres;
         this.port = port;
         try { 			//определяет блок кода, в котором может произойти исключение;
-            this.socket = new Socket(addr, port);
-        } catch (IOException e) { //определяет блок кода, в котором происходит обработка исключения;
-            System.err.println("Socket failed");
+            this.socket = new Socket(adres, port);
+        } catch (IOException e) { //определяет блок кода, в котором происходит обработка исключения;// пишем обработку исключения при закрытии потока чтения
+            System.err.println("Ошибка сокета"); //вывод ошибки
         }
-        try { // при закрытии потока тоже возможно исключение, например, если он не был открыт, поэтому “оборачиваем” код в блок try
+        try { // при закрытии потока тоже возможно исключение, например, если он не был открыт, поэтому помещаем код в блок try
             // потоки чтения из сокета / записи в сокет, и чтения с консоли
-            inputUser = new BufferedReader(new InputStreamReader(System.in));
+            inputUser = new BufferedReader(new InputStreamReader(System.in)); //System.in входящий поток, для получения данных с клавиатуры
             in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             out = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
-            this.pressNickname(); // перед началом необходимо спросит имя
-            new ReadMsg().start(); // нить читающая сообщения из сокета в бесконечном цикле
-            new WriteMsg().start(); // нить пишущая сообщения в сокет приходящие с консоли в бесконечном цикле
+            this.pressName(); // перед началом необходимо спросит имя
+            new ChtenieSms().start(); // нить читающая сообщения из сокета в бесконечном цикле
+            new ZapisSms().start(); // нить пишущая сообщения в сокет приходящие с консоли в бесконечном цикле
         } catch (IOException e) {
-            // Сокет должен быть закрыт при любой
-            // ошибке, кроме ошибки конструктора сокета:
-            ClientSomthing.this.downService();
+            // Сокет должен быть закрыт при любой ошибке, кроме ошибки конструктора сокета
+            Client.this.downService();
         }
-        // В противном случае сокет будет закрыт
-        // в методе run() нити.
+        // В противном случае сокет будет закрыт в методе run.
     }
     
-    /* просьба ввести имя, и приветсвие на сервере */
+    /* просьба ввести имя, и приветствие на сервере */
     
-    private void pressNickname() {
-        System.out.print("Press your nick: ");
+    private void pressName() {
+        System.out.print("Введите ваш ник: "); // поток для отправки данных на консоль
         try {
-            nickname = inputUser.readLine();
-            out.write("Hello " + nickname + "\n");
-            out.flush();  //передать данные из буфера во Writer
+            name = inputUser.readLine();
+            out.write("Приветсвую " + name + "\n");
+            out.flush();  //передать данные из буфера во Writer. Флаш используется, чтобы принудительно записать в целевой поток данные, которые могут кэшироваться в текущем потоке
         } catch (IOException ignored) {
         }
         
@@ -71,7 +67,7 @@ class ClientSomthing {
     }
     
     // нить чтения сообщений с сервера
-    private class ReadMsg extends Thread {
+    private class ChtenieSms extends Thread {
         @Override
         public void run() {
             
@@ -80,39 +76,39 @@ class ClientSomthing {
                 while (true) {
                     str = in.readLine(); // ждем сообщения с сервера
                     if (str.equals("stop")) {
-                        ClientSomthing.this.downService(); // откл обслуживания
+                        Client.this.downService(); // откл обслуживания
                         break; // выходим из цикла если пришло "stop"
                     }
                     System.out.println(str); // пишем сообщение с сервера на консоль
                 }
             } catch (IOException e) {
-                ClientSomthing.this.downService(); // откл обслуживания
+                Client.this.downService(); // откл обслуживания
             }
         }
     }
     
     // нить отправляющая сообщения приходящие с консоли на сервер
-    public class WriteMsg extends Thread {
+    public class ZapisSms extends Thread {
         
         @Override
         public void run() {
             while (true) {
-                String userWord;
+                String clientSms;
                 try {
                     time = new Date(); // текущая дата
-                    dt1 = new SimpleDateFormat("HH:mm:ss"); // берем только время до секунд
-                    dtime = dt1.format(time); // время
-                    userWord = inputUser.readLine(); // счесть сообщения с консоли
-                    if (userWord.equals("stop")) {  //прерывание цикла при написании строки стоп
+                    dt1 = new SimpleDateFormat("чч:мм:сс"); // берем только время до секунд
+                    datatime = dt1.format(time); // время
+                    clientSms = inputUser.readLine(); // счесть сообщения с консоли
+                    if (clientSms.equals("stop")) {  //прерывание цикла при написании строки стоп
                         out.write("stop" + "\n");
-                        ClientSomthing.this.downService(); // откл обслуживания
+                        Client.this.downService(); // откл обслуживания
                         break; // выходим из цикла если пришло "stop"
                     } else {
-                        out.write("(" + dtime + ") " + nickname + ": " + userWord + "\n"); // отправляем на сервер
+                        out.write("(" + datatime + ") " + name + ": " + clientSms + "\n"); // отправляем на сервер время,ник и сообщение
                     }
                     out.flush(); // чистим и передаем данные из буфера во Writer
                 } catch (IOException e) {
-                    ClientSomthing.this.downService(); // в случае исключения тоже останавливает обслуживание
+                    Client.this.downService(); // в случае исключения тоже останавливает обслуживание
                     
                 }
                 
@@ -123,12 +119,9 @@ class ClientSomthing {
 
 public class Client {
     
-    public static String ipAddr = "localhost";
+    public static String ipAdres = "localhost";
     public static int port = 8080;
-    
-    /*создание клиент-соединения с узананными адресом и номером порта @param args */
-    
     public static void main(String[] args) {
-        new ClientSomthing(ipAddr, port);
+        new Client(ipAdres, port);
     }
 }
