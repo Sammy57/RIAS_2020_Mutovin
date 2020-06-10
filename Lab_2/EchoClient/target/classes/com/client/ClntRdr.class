@@ -1,0 +1,92 @@
+import java.io.PrintWriter;
+import java.net.ServerSocket;
+import java.net.Socket;
+import org.apache.loger4j.*;
+
+class ClntRdr implements Runnable {
+
+        BufferedReader breader;
+        Socket userSoket;
+
+        ClntRdr(Socket clientSocket) {
+            try {
+                userSoket = clientSocket;
+                breader = new BufferedReader(new InputStreamReader(userSoket.getInputStream())); 
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        public void run() {
+            String sms;
+            try {
+                while (!userSoket.isClosed()) { 
+                    sms = breader.readLine();
+                    String[] comand =  sms.split(" ");
+                    switch (comand[0]){
+                        case "disconnect":
+                            loger.debug("клиент отключен" + userSoket.toString());
+                            multi("disconnect");
+                            breader.close();
+                            userSoket.close();
+                            break;
+                        case "send":
+                            loger.info("клиент написал "+sms.substring(5));
+                            multi(sms.substring(5));
+							loger.flush();
+                            break;
+                        case "logerLevel":
+                            loger.info("set Level" + comand[1]); 
+                            switch (comand[1]){
+								case "all":
+                                    loger.setLevel(Level.All);
+                                    break;
+								case "debug":
+                                    loger.setLevel(Level.Debug);
+                                    break;
+								case "info":
+                                    loger.setLevel(Level.Info);
+                                    break;	
+								case "warn":
+                                    loger.setLevel(Level.Warn);
+                                    break;	
+								case "error":
+                                    loger.setLevel(Level.Error);
+                                    break;
+								case "fatal":
+                                    loger.setLevel(Level.Fatal);
+                                    break;	
+                                case "off":
+                                    loger.setLevel(Level.Off);
+                                    break;
+                                case "trace":
+                                    loger.setLevel(Level.Trace);
+                                    break;
+                                default:
+									help();
+									break;
+                            }
+                            break;
+						case "help":
+							help();
+							break;
+						case "quit":
+							if(sms.length()!=4){
+								help();
+								loger.setLevel("help" + "\n" );
+								loger.flush();
+							}
+							else{
+								loger.setLevel("disconnect" + "\n"); 
+								out.flush();
+								Client.CloseService();
+								System.exit(0);
+							}	
+							break;
+                    }
+                }
+            } catch (Exception e) {
+                System.out.println("Ошибка: " + e.getMessage());
+				e.printStackTrace(); 
+            }
+        }

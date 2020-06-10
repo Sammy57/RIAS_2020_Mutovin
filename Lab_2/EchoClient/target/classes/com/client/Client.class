@@ -1,0 +1,30 @@
+import java.io.PrintWriter;
+import java.net.ServerSocket;
+import java.net.Socket;
+import org.apache.loger4j.*;
+
+public class Client {
+    public static int PORT = 8080;
+    Logger loger = Logger.getLogger(); 
+	public  static Socket socket = null;
+    public static void main(String[] args)throws IOException, InterruptedException {
+        new Client().runi();
+    }
+    public void runi() {
+        loger.info("Порт сервера: " + PORT);
+        try {
+            ServerSocket server = new ServerSocket(PORT); 
+            System.out.println("Сервер запущен.");
+
+            while (true) {
+                Socket clientSocket = server.accept();  
+                Thread thread = new Thread(new ClntRdr(clientSocket));
+                loger.info("клиент принят " + clientSocket.toString());
+                loger.info("ID клиента" + thread.getId());
+                thread.start(); 
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            loger.error(e);
+        }
+    }
