@@ -1,0 +1,27 @@
+import java.util.Scanner;
+import org.apache.log4j.Logger;
+
+class UserOchered implements Runnable {
+    private Server server;
+    private User user;
+    static Logger loger = Logger.getLogger(Server.class);
+
+    public UserOshered(Server server, User user) {
+        this.server = server;
+        this.user = user;
+    }
+
+    public void run() {
+        Scanner sc = new Scanner(this.user.getInputStream());
+
+        while(sc.hasNextLine()) {
+            String sms = sc.nextLine();
+            this.server.broadcastSms(sms);
+            loger.info("Получено sms для клиента: " + sms);
+        }
+
+        this.server.removeUser(this.user);
+        sc.close();
+        loger.info("Сканер закрыт и удален клиент");
+    }
+}

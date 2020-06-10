@@ -1,0 +1,43 @@
+import java.io.IOException;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import org.apache.log4j.Logger;
+
+public Server(int port) {
+    this.port = port;
+    this.clients = new ArrayList<User>();
+  }
+  public void run() throws IOException {
+    server = new ServerSocket(port) {
+      protected void finalize() throws IOException {
+        this.close();
+      }
+    };
+    loger.info("Порт 1234 добавлен. Сервер запущен");
+    while (true) {
+   
+      Socket client = server.accept();
+
+      loger.info("Клиент подключен");
+     
+      User newUser = new User(client, "user");
+      this.clients.add(newUser);
+      new Thread(new UserOchered(this, newUser)).start(); 
+      loger.info("Создан новый поток для обработки входящих сообщений нового клиента");
+    }
+  }
+  public void removeUser(User user){
+    this.clients.remove(user);
+  }
+
+ 
+  public void broadcastSms(String msg) {
+    for (User client : this.clients) {
+      client.getOutStream().println(
+        msg);
+    }
+  }
+}
